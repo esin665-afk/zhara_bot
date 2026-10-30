@@ -55,8 +55,6 @@ def register_handlers(dp):
                 )
                 return
 
-            # ... (дальше идет ваш код с расчетом multiplier, status и сохранением user_dates) ...
-
             # 2. Расчет сезонного коэффициента (праздники и будни)
             base_multiplier = 1.0
             status = "Стандартный день"
@@ -225,6 +223,20 @@ def register_handlers(dp):
                 )
 
 
+        elif data == "clear_cart":
+            await callback.answer("Корзина очищена!")
+
+            # Очищаем корзину пользователя
+            user_carts[user_id] = []
+
+            # Показываем меню заново
+            text = (
+                "🎸 Твой сет очищен!\n\n"
+                "Выбери песни заново:"
+            )
+            await callback.message.edit_text(text=text, reply_markup=get_songs_menu())
+
+
         elif data == "calculate_total":
             cart = user_carts.get(user_id, [])
             if user_id not in user_dates:
@@ -233,7 +245,6 @@ def register_handlers(dp):
             if not cart:
                 await callback.answer("Корзина пуста! Добавь песни.", show_alert=True)
                 return
-            # ... (остальной ваш код) ...
 
             await callback.answer()
 

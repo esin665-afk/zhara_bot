@@ -21,6 +21,7 @@ def get_songs_menu():
         songs_buttons.append([InlineKeyboardButton(text=button_text, callback_data=f"add_{song['id']}")])
 
     songs_buttons.append([InlineKeyboardButton(text="✅ Посчитать итог", callback_data="calculate_total")])
+    songs_buttons.append([InlineKeyboardButton(text="❌ Очистить сет", callback_data="clear_cart")])
     songs_buttons.append([InlineKeyboardButton(text="🔙 В главное меню", callback_data="main_menu")])
 
     return InlineKeyboardMarkup(inline_keyboard=songs_buttons)
