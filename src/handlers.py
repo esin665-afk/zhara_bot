@@ -174,11 +174,10 @@ def register_handlers(dp):
             )
             await callback.message.edit_text(text=text, parse_mode="HTML", reply_markup=get_songs_menu())
 
+
         elif data.startswith("add_"):
             song_id = int(data.split("_")[1])
-
             song = next((s for s in SONGS if s["id"] == song_id), None)
-
             if song:
                 if song not in user_carts[user_id]:
                     user_carts[user_id].append(song)
@@ -186,8 +185,7 @@ def register_handlers(dp):
                 else:
                     await callback.answer("Эта песня уже есть в сете!", show_alert=True)
                     return
-
-                # ВАУ-ЭФФЕКТ: Если у песни есть видео, отправляем его!
+                # 1. Отправляем видео (если есть)
                 if song.get("video_id"):
                     try:
                         await callback.message.answer_video(
@@ -195,29 +193,28 @@ def register_handlers(dp):
                             caption=f"🎸 Живое исполнение: {song['title']}"
                         )
                     except Exception as e:
-                        print(f"Ошибка отправки видео песни: {e}")
-
-                # Живой калькулятор с учетом даты
+                        print(f"Ошибка отправки видео: {e}")
+                # 2. Считаем корзину
                 total_duration = sum(s["duration"] for s in user_carts[user_id])
-
-                # Получаем коэффициент пользователя
                 multiplier = user_dates.get(user_id, ("", 1.0, ""))[1]
                 base_price = sum(s["price"] for s in user_carts[user_id])
                 total_price = int(base_price * multiplier)
-
                 text = "🎸 Выбери песни для своего сета:\n\n🎵 В сете сейчас:\n"
                 for s in user_carts[user_id]:
                     text += f"- {s['title']}\n"
-
                 text += f"\n⏱ Время: {round(total_duration, 1)} мин."
                 text += f"\n💰 Стоимость: {total_price} руб. (с учетом даты)\n"
-
                 if total_duration > 45:
                     text += "\n⚠️ Внимание! Вы превысили стандартный лимит 45 минут!"
-
                 text += "\n\nПродолжай выбирать или нажми 'Посчитать итог'."
-
-                await callback.message.edit_text(
+                # 3. ХИТРОСТЬ: Вместо edit_text (который меняет сообщение наверху),
+                # мы удаляем старое меню и присылаем новое В САМЫЙ НИЗ.
+                try:
+                    await callback.message.delete()  # Удаляем старое сообщение с кнопками
+                except Exception:
+                    pass  # Если не получилось удалить (например, оно старше 48 часов), ничего страшного
+                # Присылаем новое сообщение с обновленной корзиной внизу
+                await callback.message.answer(
                     text=text,
                     reply_markup=callback.message.reply_markup
                 )
