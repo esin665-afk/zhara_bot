@@ -1,0 +1,20 @@
+# Виртуальное окружение
+.venv/
+venv/
+env/
+
+# Кэш Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Секретные данные (токен бота)
+.env
+
+# Настройки PyCharm
+.idea/
+.vscode/
+
+# Логи и базы данных
+*.log
+*.sqlite3
