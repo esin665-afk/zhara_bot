@@ -66,3 +66,5 @@ URGENCY_RATES = {
     "standard": 1.0,
     "early_bird": 0.85,
 }
+
+TIME_MACHINE_VIDEO = "BAACAgIAAxkBAAIBu2rlnJkn3agIcz1H5wABUSyPnPuHkAACJqsAAhk4MEuSlGr7HPkaiD0E"

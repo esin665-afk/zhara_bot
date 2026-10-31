@@ -6,6 +6,8 @@ def get_main_menu():
         [InlineKeyboardButton(text="🎵 Афиша", callback_data="afisha")],
         [InlineKeyboardButton(text="🎥 Видео", callback_data="video")],
         [InlineKeyboardButton(text="📞 Контакты", callback_data="contacts")],
+        [InlineKeyboardButton(text="📢 Поделиться ботом", switch_inline_query="Смотри, какой крутой бот у группы ЖАРА! Собери свой идеальный сет 🎸🔥")],
+        [InlineKeyboardButton(text="🎫 Мой последний заказ", callback_data="my_orders")],
         [InlineKeyboardButton(text="💙 Мы во ВКонтакте", url="https://vk.ru/zhara_62")],
         [InlineKeyboardButton(text="📅 Выбрать дату", callback_data="book_date")], # <-- ВОТ ОНА!
         [InlineKeyboardButton(text="🎸 Собрать свой сет", callback_data="set_builder")]
