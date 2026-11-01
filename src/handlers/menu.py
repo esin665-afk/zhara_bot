@@ -2,15 +2,19 @@ from aiogram import types
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command
 from src.keyboards import get_main_menu
-from config import VIDEOS
+from config import VIDEOS, WELCOME_VIDEO
 from src.database import get_user_last_order
 
 def register_menu_handlers(dp):
     @dp.message(Command("start"))
     async def start(message: types.Message):
-        await message.answer(
-            "🔥 Привет! Это бот кавер-группы «ЖАРА».\n"
-            "Выбирай, что тебя интересует:",
+        # Отправляем видео с текстом и кнопками
+        await message.answer_video(
+            video=WELCOME_VIDEO,
+            caption=(
+                "🔥 Привет! Это бот кавер-группы «ЖАРА».\n"
+                "Выбирай, что тебя интересует:"
+            ),
             reply_markup=get_main_menu()
         )
 

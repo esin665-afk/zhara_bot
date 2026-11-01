@@ -27,7 +27,7 @@ async def main():
     # Регистрируем админ-панель
     register_admin_handlers(dp)  # <-- ДОБАВИТЬ ЭТУ СТРОКУ
 
-    # # ВРЕМЕННЫЙ ЛОВЕЦ ВИДЕО
+    # # # ВРЕМЕННЫЙ ЛОВЕЦ ВИДЕО
     # @dp.message(lambda message: message.video is not None)
     # async def get_video_id(message: types.Message):
     #     # Выводим в консоль
