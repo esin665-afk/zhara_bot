@@ -367,3 +367,42 @@ def update_user_phone(telegram_id, phone):
     cur.close()
     conn.close()
     print(f"📱 Телефон {phone} сохранен для пользователя {telegram_id}!")
+
+
+def add_check_constraints():
+    """Добавляет логические ограничения (CHECK) в таблицы."""
+    conn = get_connection()
+    cur = conn.cursor()
+
+    try:
+        # 1. Цена в заказе не может быть отрицательной
+        cur.execute("""
+            ALTER TABLE orders 
+            ADD CONSTRAINT check_total_price_positive 
+            CHECK (total_price >= 0);
+        """)
+
+        # 2. Цена песни должна быть строго больше нуля
+        cur.execute("""
+            ALTER TABLE songs 
+            ADD CONSTRAINT check_song_price_positive 
+            CHECK (price > 0);
+        """)
+
+        # 3. Длительность песни должна быть больше нуля
+        cur.execute("""
+            ALTER TABLE songs 
+            ADD CONSTRAINT check_song_duration_positive 
+            CHECK (duration > 0);
+        """)
+
+        conn.commit()
+        print("✅ Логические ограничения (CHECK) успешно добавлены!")
+
+    except Exception as e:
+        # Если ограничения уже добавлены, база выдаст ошибку, мы её перехватим
+        conn.rollback()
+        print(f"ℹ️ Ограничения уже существуют или произошла ошибка: {e}")
+
+    cur.close()
+    conn.close()
