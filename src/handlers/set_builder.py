@@ -1,4 +1,3 @@
-from aiogram import types
 from aiogram.types import CallbackQuery
 from aiogram_calendar import SimpleCalendar
 from src.keyboards import get_main_menu, get_songs_menu
