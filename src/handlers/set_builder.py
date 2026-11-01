@@ -1,14 +1,16 @@
 from aiogram.types import CallbackQuery
 from aiogram_calendar import SimpleCalendar
-from src.keyboards import get_main_menu, get_songs_menu
+from src.keyboards import get_main_menu, get_songs_menu, get_phone_keyboard
 from config import SONGS, RECIPIENTS
-from src.database import get_or_create_user, save_order_with_songs
+from src.database import get_or_create_user, save_order_with_songs, get_connection, update_user_phone
 from src.handlers.calendar import user_dates
 from src.pdf_generator import generate_receipt
 from aiogram.types import FSInputFile
 import os
 
+
 user_carts = {}
+temp_carts = {}
 
 
 def register_set_handlers(dp):
@@ -125,6 +127,28 @@ def register_set_handlers(dp):
                 await callback.bot.send_message(chat_id=recipient_id, text=manager_text)
             except Exception as e:
                 print(f"Ошибка отправки {recipient_id}: {e}")
+
+        # ПРОВЕРКА НА ТЕЛЕФОН
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT phone FROM users WHERE telegram_id = %s", (user_id,))
+        phone_row = cur.fetchone()
+        cur.close()
+        conn.close()
+
+        # Если телефона нет, просим его и ПРЕРЫВАЕМ оформление (заказ сохранится после ввода)
+        if not phone_row or not phone_row[0]:
+            # Сохраняем корзину во временную переменную, чтобы не потерять, когда он введет телефон
+            temp_carts[user_id] = cart
+
+            await callback.message.answer(
+                "📱 Пожалуйста, поделитесь своим номером телефона, чтобы менеджер мог связаться с вами для уточнения деталей:",
+                reply_markup=get_phone_keyboard()
+            )
+            # Убираем старые кнопки, чтобы не мешали
+            await callback.message.edit_reply_markup(reply_markup=None)
+            return  # Выходим, ждем, пока пользователь нажмет "Отправить контакт"
+
 
         # СОХРАНЕНИЕ В БАЗУ
         user_db_id = get_or_create_user(

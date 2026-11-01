@@ -336,3 +336,34 @@ def get_monthly_stats():
     cur.close()
     conn.close()
     return result
+
+
+def add_phone_column():
+    """Добавляет колонку phone в таблицу users, если её еще нет (ALTER TABLE)."""
+    conn = get_connection()
+    cur = conn.cursor()
+
+    # Команда DDL: добавляем колонку
+    cur.execute("""
+        ALTER TABLE users 
+        ADD COLUMN IF NOT EXISTS phone VARCHAR(20);
+    """)
+
+    conn.commit()
+    cur.close()
+    conn.close()
+    print("✅ Колонка phone добавлена в таблицу users!")
+
+
+def update_user_phone(telegram_id, phone):
+    """Сохраняет номер телефона пользователя в базу."""
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE users SET phone = %s WHERE telegram_id = %s",
+        (phone, telegram_id)
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+    print(f"📱 Телефон {phone} сохранен для пользователя {telegram_id}!")

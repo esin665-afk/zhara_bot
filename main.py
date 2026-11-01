@@ -1,41 +1,41 @@
 import logging
 import asyncio
-from aiogram import Bot, Dispatcher, types  # <-- ДОБАВЬТЕ types ВОТ СЮДА
-from config import TOKEN, SONGS # <-- Добавили SONGS
+from aiogram import Bot, Dispatcher, types
+from config import TOKEN, SONGS
 from src.handlers import register_handlers
 from src.admin import register_admin_handlers
-# 1. ДОБАВЬТЕ ЭТУ СТРОКУ (импорт функции создания таблиц)
-from src.database import init_db, init_songs_db # <-- Добавили init_songs_db
-# Настройка логирования
+from aiogram.types import Message
+from src.database import init_db, init_songs_db, add_phone_column, update_user_phone
+from src.keyboards import get_main_menu  # <-- ДОБАВЛЕН ИМПОРТ КЛАВИАТУРЫ
+
 logging.basicConfig(level=logging.INFO)
 
 
 async def main():
     print("Бот запущен! Идем в Telegram и проверяем...")
 
-    # 2. ДОБАВЬТЕ ЭТУ СТРОКУ (создаем таблицы в базе данных перед запуском)
     init_db()
-    init_songs_db(SONGS) # <-- Запускаем инициализацию песен
+    add_phone_column()
+    init_songs_db(SONGS)
 
-    # Создаем бота и диспетчер
     bot = Bot(token=TOKEN)
     dp = Dispatcher()
 
-    # Регистрируем все обработчики из модуля handlers.py
     register_handlers(dp)
+    register_admin_handlers(dp)
 
-    # Регистрируем админ-панель
-    register_admin_handlers(dp)  # <-- ДОБАВИТЬ ЭТУ СТРОКУ
+    @dp.message(lambda message: message.contact is not None)
+    async def handle_contact(message: Message):
+        phone = message.contact.phone_number
+        user_id = message.from_user.id
 
-    # # # ВРЕМЕННЫЙ ЛОВЕЦ ВИДЕО
-    # @dp.message(lambda message: message.video is not None)
-    # async def get_video_id(message: types.Message):
-    #     # Выводим в консоль
-    #     print(f"\n=== ВАШ ID ВИДЕО ===\n{message.video.file_id}\n====================\n")
-    #     # Присылаем в чат
-    #     await message.answer(f"✅ ID вашего видео:\n`{message.video.file_id}`", parse_mode="Markdown")
+        update_user_phone(user_id, phone)
 
-    # Запускаем бота
+        await message.answer(
+            "✅ Спасибо! Телефон сохранен. Менеджер свяжется с вами в ближайшее время.",
+            reply_markup=get_main_menu()
+        )
+
     await dp.start_polling(bot)
 
 
