@@ -1,8 +1,8 @@
 from aiogram import types
 from aiogram.types import CallbackQuery
 from aiogram.filters import Command
-from src.database import get_statistics, get_top_songs
-from src.keyboards import get_admin_menu, get_main_menu
+from src.database import get_statistics, get_top_songs, get_unordered_songs
+from src.keyboards import get_admin_menu
 
 # Список ID тех, кому разрешена команда /admin (ваш и менеджера)
 ADMIN_IDS = [1556819688, 1606744507]
@@ -60,5 +60,30 @@ def register_admin_handlers(dp):
         text = "🏆 <b>ТОП-5 САМЫХ ЗАКАЗЫВАЕМЫХ ПЕСЕН:</b>\n\n"
         for i, (title, count) in enumerate(top_songs, start=1):
             text += f"{i}. {title} — <b>{count}</b> раз(а)\n"
+
+        await callback.message.answer(text, parse_mode="HTML", reply_markup=get_admin_menu())
+
+    # ВОТ ЗДЕСЬ ИСПРАВЛЕН ОТСТУП
+    @dp.callback_query(lambda c: c.data == "admin_unordered")
+    async def admin_unordered_panel(callback: CallbackQuery):
+        # Проверка доступа
+        if callback.from_user.id not in ADMIN_IDS:
+            return
+
+        await callback.answer()
+
+        # Получаем список песен, которые никто не заказывал
+        unordered_songs = get_unordered_songs()
+
+        if not unordered_songs:
+            text = "🎉 Отличные новости! Все песни из каталога хотя бы раз, но заказывали."
+            await callback.message.answer(text, reply_markup=get_admin_menu())
+            return
+
+        text = "📉 <b>ПЕСНИ, КОТОРЫЕ НИ РАЗУ НЕ ЗАКАЗЫВАЛИ:</b>\n\n"
+        for song in unordered_songs:
+            text += f"- {song}\n"
+
+        text += "\n<i>Возможно, стоит убрать их из бота или заменить на новые?</i>"
 
         await callback.message.answer(text, parse_mode="HTML", reply_markup=get_admin_menu())

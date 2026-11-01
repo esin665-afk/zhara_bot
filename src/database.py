@@ -215,3 +215,23 @@ def get_top_songs():
     conn.close()
     return result
 
+
+def get_unordered_songs():
+    """Возвращает список песен, которые ни разу не заказывали (LEFT JOIN)."""
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT s.title
+        FROM songs s
+        LEFT JOIN order_songs os ON s.id = os.song_id
+        WHERE os.order_id IS NULL
+        ORDER BY s.title ASC
+    """)
+
+    result = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    # Возвращаем простой список строк (названий песен)
+    return [row[0] for row in result]

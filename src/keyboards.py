@@ -34,6 +34,7 @@ def get_admin_menu():
     keyboard = [
         [InlineKeyboardButton(text="📊 Статистика", callback_data="admin_stats")],
         [InlineKeyboardButton(text="🏆 Топ песен", callback_data="admin_top_songs")],
+        [InlineKeyboardButton(text="📉 Никто не заказал", callback_data="admin_unordered")],  # <-- НОВАЯ КНОПКА
         [InlineKeyboardButton(text="🔙 В главное меню", callback_data="main_menu")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
