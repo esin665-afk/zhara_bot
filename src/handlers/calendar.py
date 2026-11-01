@@ -4,7 +4,7 @@ from aiogram_calendar import SimpleCalendar, SimpleCalendarCallback
 from src.keyboards import get_main_menu
 from config import (
     BUSY_DATES, HOLIDAY_PERIODS, WEEKDAY_DISCOUNT, URGENCY_RATES,
-    TIME_MACHINE_VIDEO  # <-- Добавили ID видео сюда
+    TIME_MACHINE_VIDEO
 )
 
 user_dates = {}
@@ -14,7 +14,8 @@ def register_calendar_handlers(dp):
     @dp.callback_query(lambda c: c.data == 'book_date')
     async def show_calendar(callback: CallbackQuery):
         await callback.answer()
-        await callback.message.edit_text(
+        # ИЗМЕНЕНО: edit_text -> answer
+        await callback.message.answer(
             "📅 Выберите дату вашего мероприятия:\n(Цена зависит от дня недели и срока бронирования)",
             reply_markup=await SimpleCalendar().start_calendar()
         )
@@ -32,7 +33,6 @@ def register_calendar_handlers(dp):
             if selected_date < today:
                 await callback.answer()
 
-                # Отправляем видео с шуткой
                 try:
                     await callback.message.answer_video(
                         video=TIME_MACHINE_VIDEO,
@@ -49,7 +49,6 @@ def register_calendar_handlers(dp):
                     print(f"Ошибка отправки видео: {e}")
                     await callback.message.answer("Ошибка временной линии! Выберите дату из будущего.")
 
-                # Снова показываем календарь
                 await callback.message.answer(
                     "📅 Выберите дату из будущего:",
                     reply_markup=await SimpleCalendar().start_calendar()
@@ -58,7 +57,8 @@ def register_calendar_handlers(dp):
 
             # 🚨 2. ПРОВЕРКА НА ЗАНЯТОСТЬ 🚨
             if date_str in BUSY_DATES:
-                await callback.message.edit_text(
+                # ИЗМЕНЕНО: edit_text -> answer
+                await callback.message.answer(
                     f"❌ Увы, дата <b>{selected_date.strftime('%d.%m.%Y')}</b> уже занята.\nВыберите другую:",
                     parse_mode="HTML",
                     reply_markup=await SimpleCalendar().start_calendar()
@@ -106,4 +106,5 @@ def register_calendar_handlers(dp):
                 f"Теперь при сборке сета цены будут пересчитаны с учетом этой даты. "
                 f"Перейдите в «Собрать свой сет»!"
             )
-            await callback.message.edit_text(text=text, parse_mode="HTML", reply_markup=get_main_menu())
+            # ИЗМЕНЕНО: edit_text -> answer
+            await callback.message.answer(text=text, parse_mode="HTML", reply_markup=get_main_menu())

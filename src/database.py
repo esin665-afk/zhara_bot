@@ -127,3 +127,91 @@ def get_user_last_order(telegram_id):
     conn.close()
     return order
 
+
+def init_songs_db(songs_list):
+    """Создает таблицы песен и связывает их с заказами, заполняет из config."""
+    conn = get_connection()
+    cur = conn.cursor()
+
+    # Таблица песен
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS songs (
+            id SERIAL PRIMARY KEY,
+            title VARCHAR(255) UNIQUE NOT NULL,
+            price INT NOT NULL,
+            duration FLOAT NOT NULL
+        );
+    """)
+
+    # Таблица связи (какие песни в каком заказе)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS order_songs (
+            order_id INT REFERENCES orders(id) ON DELETE CASCADE,
+            song_id INT REFERENCES songs(id) ON DELETE CASCADE,
+            PRIMARY KEY (order_id, song_id)
+        );
+    """)
+
+    # Заполняем таблицу songs из config.py (если их там еще нет)
+    for song in songs_list:
+        cur.execute("SELECT id FROM songs WHERE title = %s", (song["title"],))
+        if not cur.fetchone():
+            cur.execute(
+                "INSERT INTO songs (title, price, duration) VALUES (%s, %s, %s)",
+                (song["title"], song["price"], song["duration"])
+            )
+
+    conn.commit()
+    cur.close()
+    conn.close()
+    print("✅ База данных песен готова!")
+
+
+def save_order_with_songs(user_id, event_date, total_price, total_time, songs_list_text, song_titles):
+    """Сохраняет заказ и привязывает к нему конкретные песни."""
+    conn = get_connection()
+    cur = conn.cursor()
+
+    # Сохраняем сам заказ
+    cur.execute("""
+        INSERT INTO orders (user_id, event_date, total_price, total_time, songs_list)
+        VALUES (%s, %s, %s, %s, %s) RETURNING id
+    """, (user_id, event_date, total_price, total_time, songs_list_text))
+    order_id = cur.fetchone()[0]
+
+    # Привязываем песни к заказу (через таблицу order_songs)
+    for title in song_titles:
+        cur.execute("SELECT id FROM songs WHERE title = %s", (title,))
+        song_row = cur.fetchone()
+        if song_row:
+            song_id = song_row[0]
+            cur.execute(
+                "INSERT INTO order_songs (order_id, song_id) VALUES (%s, %s)",
+                (order_id, song_id)
+            )
+
+    conn.commit()
+    cur.close()
+    conn.close()
+    print(f"💾 Заказ сохранен в БД с песнями (User ID: {user_id})!")
+
+
+def get_top_songs():
+    """Возвращает топ-5 самых популярных песен (используем INNER JOIN из урока!)."""
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT s.title, COUNT(os.order_id) as times_ordered
+        FROM songs s
+        INNER JOIN order_songs os ON s.id = os.song_id
+        GROUP BY s.title
+        ORDER BY times_ordered DESC
+        LIMIT 5
+    """)
+
+    result = cur.fetchall()
+    cur.close()
+    conn.close()
+    return result
+

@@ -2,12 +2,11 @@ from aiogram.types import CallbackQuery
 from aiogram_calendar import SimpleCalendar
 from src.keyboards import get_main_menu, get_songs_menu
 from config import SONGS, RECIPIENTS
-from src.database import get_or_create_user, save_order
+from src.database import get_or_create_user, save_order_with_songs
 from src.handlers.calendar import user_dates
 from src.pdf_generator import generate_receipt
 from aiogram.types import FSInputFile
 import os
-
 
 user_carts = {}
 
@@ -19,7 +18,8 @@ def register_set_handlers(dp):
         user_id = callback.from_user.id
 
         if user_id not in user_dates:
-            await callback.message.edit_text(
+            # ИЗМЕНЕНО: edit_text -> answer
+            await callback.message.answer(
                 "⚠️ <b>Сначала выберите дату мероприятия!</b>\n\n"
                 "Без даты мы не можем рассчитать стоимость и проверить свободен ли день.",
                 parse_mode="HTML",
@@ -36,7 +36,8 @@ def register_set_handlers(dp):
             f"📊 Статус: {status} (x{multiplier})\n"
             f"(Корзина пуста)"
         )
-        await callback.message.edit_text(text=text, parse_mode="HTML", reply_markup=get_songs_menu())
+        # ИЗМЕНЕНО: edit_text -> answer
+        await callback.message.answer(text=text, parse_mode="HTML", reply_markup=get_songs_menu())
 
     @dp.callback_query(lambda c: c.data.startswith("add_"))
     async def add_song(callback: CallbackQuery):
@@ -77,13 +78,15 @@ def register_set_handlers(dp):
                 await callback.message.delete()
             except Exception:
                 pass
+            # Здесь уже был answer, оставляем как есть
             await callback.message.answer(text=text, reply_markup=callback.message.reply_markup)
 
     @dp.callback_query(lambda c: c.data == "clear_cart")
     async def clear_cart(callback: CallbackQuery):
         await callback.answer("Корзина очищена!")
         user_carts[callback.from_user.id] = []
-        await callback.message.edit_text("🎸 Твой сет очищен!\n\nВыбери песни заново:", reply_markup=get_songs_menu())
+        # ИЗМЕНЕНО: edit_text -> answer
+        await callback.message.answer("🎸 Твой сет очищен!\n\nВыбери песни заново:", reply_markup=get_songs_menu())
 
     @dp.callback_query(lambda c: c.data == "calculate_total")
     async def calculate_total(callback: CallbackQuery):
@@ -130,12 +133,15 @@ def register_set_handlers(dp):
             username=callback.from_user.username or "Нет ника"
         )
         songs_text = ", ".join([s['title'] for s in cart])
-        save_order(
+        song_titles = [s['title'] for s in cart]
+
+        save_order_with_songs(
             user_id=user_db_id,
             event_date=date_str,
             total_price=total_price,
             total_time=total_time,
-            songs_list=songs_text
+            songs_list_text=songs_text,
+            song_titles=song_titles
         )
 
         text = "🎉 Твой сет собран и отправлен менеджеру!\n\n🎵 Песни:\n"
@@ -145,7 +151,8 @@ def register_set_handlers(dp):
         text += f"💰 Общая стоимость: {total_price} руб.\n\nС тобой свяжутся для уточнения деталей."
 
         user_carts[user_id] = []
-        # # --- ГЕНЕРАЦИЯ И ОТПРАВКА PDF ---
+
+        # --- ГЕНЕРАЦИЯ И ОТПРАВКА PDF ---
         try:
             pdf_filename = generate_receipt(
                 user_name=callback.from_user.first_name,
@@ -159,10 +166,10 @@ def register_set_handlers(dp):
                 document=pdf_file,
                 caption="📄 Ваш официальный чек и сет-лист. Сохраните его!"
             )
-            os.remove(pdf_filename)  # Удаляем файл с сервера
+            os.remove(pdf_filename)
         except Exception as e:
             print(f"Ошибка генерации PDF: {e}")
         # --------------------------------
-        # А вот теперь отправляем обычный текст с итогом
-        await callback.message.edit_text(text=text, reply_markup=get_main_menu())
 
+        # ИЗМЕНЕНО: edit_text -> answer
+        await callback.message.answer(text=text, reply_markup=get_main_menu())

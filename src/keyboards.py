@@ -27,3 +27,13 @@ def get_songs_menu():
     songs_buttons.append([InlineKeyboardButton(text="🔙 В главное меню", callback_data="main_menu")])
 
     return InlineKeyboardMarkup(inline_keyboard=songs_buttons)
+
+
+def get_admin_menu():
+    """Меню для админов (статистика, топ песен)."""
+    keyboard = [
+        [InlineKeyboardButton(text="📊 Статистика", callback_data="admin_stats")],
+        [InlineKeyboardButton(text="🏆 Топ песен", callback_data="admin_top_songs")],
+        [InlineKeyboardButton(text="🔙 В главное меню", callback_data="main_menu")]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)

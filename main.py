@@ -1,12 +1,11 @@
 import logging
 import asyncio
 from aiogram import Bot, Dispatcher, types  # <-- ДОБАВЬТЕ types ВОТ СЮДА
-from config import TOKEN
+from config import TOKEN, SONGS # <-- Добавили SONGS
 from src.handlers import register_handlers
 from src.admin import register_admin_handlers
 # 1. ДОБАВЬТЕ ЭТУ СТРОКУ (импорт функции создания таблиц)
-from src.database import init_db
-
+from src.database import init_db, init_songs_db # <-- Добавили init_songs_db
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 
@@ -16,6 +15,7 @@ async def main():
 
     # 2. ДОБАВЬТЕ ЭТУ СТРОКУ (создаем таблицы в базе данных перед запуском)
     init_db()
+    init_songs_db(SONGS) # <-- Запускаем инициализацию песен
 
     # Создаем бота и диспетчер
     bot = Bot(token=TOKEN)
