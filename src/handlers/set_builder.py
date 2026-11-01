@@ -5,6 +5,10 @@ from src.keyboards import get_main_menu, get_songs_menu
 from config import SONGS, RECIPIENTS
 from src.database import get_or_create_user, save_order
 from src.handlers.calendar import user_dates
+from src.pdf_generator import generate_receipt
+from aiogram.types import FSInputFile
+import os
+
 
 user_carts = {}
 
@@ -142,4 +146,24 @@ def register_set_handlers(dp):
         text += f"💰 Общая стоимость: {total_price} руб.\n\nС тобой свяжутся для уточнения деталей."
 
         user_carts[user_id] = []
+        # # --- ГЕНЕРАЦИЯ И ОТПРАВКА PDF ---
+        try:
+            pdf_filename = generate_receipt(
+                user_name=callback.from_user.first_name,
+                event_date=date_str,
+                songs_list=songs_text,
+                total_time=total_time,
+                total_price=total_price
+            )
+            pdf_file = FSInputFile(pdf_filename)
+            await callback.message.answer_document(
+                document=pdf_file,
+                caption="📄 Ваш официальный чек и сет-лист. Сохраните его!"
+            )
+            os.remove(pdf_filename)  # Удаляем файл с сервера
+        except Exception as e:
+            print(f"Ошибка генерации PDF: {e}")
+        # --------------------------------
+        # А вот теперь отправляем обычный текст с итогом
         await callback.message.edit_text(text=text, reply_markup=get_main_menu())
+
