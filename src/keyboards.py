@@ -36,7 +36,8 @@ def get_admin_menu():
         [InlineKeyboardButton(text="🏆 Топ песен", callback_data="admin_top_songs")],
         [InlineKeyboardButton(text="📉 Никто не заказал", callback_data="admin_unordered")],
         [InlineKeyboardButton(text="💎 Заказы выше среднего", callback_data="admin_above_avg")],
-        [InlineKeyboardButton(text="💤 Спящие клиенты", callback_data="admin_sleeping_users")], # <-- НОВАЯ КНОПКА
+        [InlineKeyboardButton(text="💤 Спящие клиенты", callback_data="admin_sleeping_users")],
+        [InlineKeyboardButton(text="⚡ Быстрые заказы", callback_data="admin_fast_orders")], # <-- НОВАЯ КНОПКА
         [InlineKeyboardButton(text="🔙 В главное меню", callback_data="main_menu")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)

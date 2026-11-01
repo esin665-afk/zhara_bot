@@ -276,3 +276,23 @@ def get_sleeping_users():
     cur.close()
     conn.close()
     return result
+
+
+def get_fast_orders():
+    """Возвращает заказы, сделанные в тот же день, что и регистрация (JOIN + WHERE)."""
+    conn = get_connection()
+    cur = conn.cursor()
+
+    # Тот самый паттерн: JOIN + сравнение колонок в WHERE
+    cur.execute("""
+        SELECT u.first_name, o.total_price, o.event_date 
+        FROM users u
+        INNER JOIN orders o ON u.id = o.user_id
+        WHERE DATE(u.created_at) = DATE(o.created_at)
+        ORDER BY o.total_price DESC
+    """)
+
+    result = cur.fetchall()
+    cur.close()
+    conn.close()
+    return result

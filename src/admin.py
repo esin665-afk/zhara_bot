@@ -3,7 +3,7 @@ from aiogram.types import CallbackQuery
 from aiogram.filters import Command
 from src.database import (
     get_statistics, get_top_songs, get_unordered_songs,
-    get_above_average_orders, get_sleeping_users
+    get_above_average_orders, get_sleeping_users, get_fast_orders
 )
 from src.keyboards import get_admin_menu
 
@@ -137,5 +137,30 @@ def register_admin_handlers(dp):
             text += f"- {first_name} ({username_str}) | ID: <code>{tg_id}</code>\n"
 
         text += "\n<i>*Этим клиентам можно написать первыми и предложить скидку, чтобы они сделали заказ!</i>"
+
+        await callback.message.answer(text, parse_mode="HTML", reply_markup=get_admin_menu())
+
+    @dp.callback_query(lambda c: c.data == "admin_fast_orders")
+    async def admin_fast_orders_panel(callback: CallbackQuery):
+        if callback.from_user.id not in ADMIN_IDS:
+            return
+
+        await callback.answer()
+
+        # Вызываем функцию с JOIN + WHERE
+        fast_orders = get_fast_orders()
+
+        if not fast_orders:
+            text = "Пока нет заказов, сделанных в день регистрации."
+            await callback.message.answer(text, reply_markup=get_admin_menu())
+            return
+
+        text = "⚡ <b>БЫСТРЫЕ ЗАКАЗЫ (Оформили в день регистрации):</b>\n\n"
+        for row in fast_orders:
+            # row[0] - имя, row[1] - сумма, row[2] - дата мероприятия
+            first_name, total_price, event_date = row
+            text += f"- {first_name} | Мероприятие: {event_date} | <b>{total_price} руб.</b>\n"
+
+        text += "\n<i>*Эти клиенты самые решительные! Они заказали сразу, как узнали о боте.</i>"
 
         await callback.message.answer(text, parse_mode="HTML", reply_markup=get_admin_menu())
