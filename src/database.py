@@ -255,3 +255,24 @@ def get_above_average_orders():
     cur.close()
     conn.close()
     return result
+
+
+def get_sleeping_users():
+    """Возвращает пользователей, которые есть в базе, но ни разу не делали заказ (NOT EXISTS)."""
+    conn = get_connection()
+    cur = conn.cursor()
+
+    # Используем NOT EXISTS для поиска "спящих" клиентов
+    cur.execute("""
+        SELECT u.telegram_id, u.first_name, u.username 
+        FROM users u
+        WHERE NOT EXISTS (
+            SELECT 1 FROM orders o WHERE o.user_id = u.id
+        )
+        ORDER BY u.created_at DESC
+    """)
+
+    result = cur.fetchall()
+    cur.close()
+    conn.close()
+    return result
