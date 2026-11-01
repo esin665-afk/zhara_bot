@@ -235,3 +235,23 @@ def get_unordered_songs():
 
     # Возвращаем простой список строк (названий песен)
     return [row[0] for row in result]
+
+
+def get_above_average_orders():
+    """Возвращает заказы, стоимость которых выше среднего чека (используем подзапрос)."""
+    conn = get_connection()
+    cur = conn.cursor()
+
+    # Тот самый подзапрос: WHERE total_price > (SELECT AVG(...))
+    cur.execute("""
+        SELECT u.first_name, o.event_date, o.total_price 
+        FROM orders o
+        JOIN users u ON o.user_id = u.id
+        WHERE o.total_price > (SELECT AVG(total_price) FROM orders)
+        ORDER BY o.total_price DESC
+    """)
+
+    result = cur.fetchall()
+    cur.close()
+    conn.close()
+    return result

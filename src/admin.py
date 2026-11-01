@@ -1,7 +1,7 @@
 from aiogram import types
 from aiogram.types import CallbackQuery
 from aiogram.filters import Command
-from src.database import get_statistics, get_top_songs, get_unordered_songs
+from src.database import get_statistics, get_top_songs, get_unordered_songs, get_above_average_orders
 from src.keyboards import get_admin_menu
 
 # Список ID тех, кому разрешена команда /admin (ваш и менеджера)
@@ -63,7 +63,6 @@ def register_admin_handlers(dp):
 
         await callback.message.answer(text, parse_mode="HTML", reply_markup=get_admin_menu())
 
-    # ВОТ ЗДЕСЬ ИСПРАВЛЕН ОТСТУП
     @dp.callback_query(lambda c: c.data == "admin_unordered")
     async def admin_unordered_panel(callback: CallbackQuery):
         # Проверка доступа
@@ -85,5 +84,29 @@ def register_admin_handlers(dp):
             text += f"- {song}\n"
 
         text += "\n<i>Возможно, стоит убрать их из бота или заменить на новые?</i>"
+
+        await callback.message.answer(text, parse_mode="HTML", reply_markup=get_admin_menu())
+
+    @dp.callback_query(lambda c: c.data == "admin_above_avg")
+    async def admin_above_avg_panel(callback: CallbackQuery):
+        if callback.from_user.id not in ADMIN_IDS:
+            return
+
+        await callback.answer()
+
+        # Вызываем функцию с подзапросом
+        above_avg = get_above_average_orders()
+
+        if not above_avg:
+            text = "Пока нет заказов, которые превышают средний чек (или заказов вообще нет)."
+            await callback.message.answer(text, reply_markup=get_admin_menu())
+            return
+
+        text = "💎 <b>ЗАКАЗЫ ВЫШЕ СРЕДНЕГО ЧЕКА (VIP):</b>\n\n"
+        for row in above_avg:
+            # row[0] - имя клиента, row[1] - дата, row[2] - сумма
+            text += f"- {row[0]} | {row[1]} | <b>{row[2]} руб.</b>\n"
+
+        text += "\n<i>*Эти клиенты приносят основную выручку. Уделите им особое внимание!</i>"
 
         await callback.message.answer(text, parse_mode="HTML", reply_markup=get_admin_menu())
