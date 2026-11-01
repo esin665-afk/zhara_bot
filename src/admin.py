@@ -3,7 +3,8 @@ from aiogram.types import CallbackQuery
 from aiogram.filters import Command
 from src.database import (
     get_statistics, get_top_songs, get_unordered_songs,
-    get_above_average_orders, get_sleeping_users, get_fast_orders
+    get_above_average_orders, get_sleeping_users, get_fast_orders,
+    get_db_audit
 )
 from src.keyboards import get_admin_menu
 
@@ -162,5 +163,35 @@ def register_admin_handlers(dp):
             text += f"- {first_name} | Мероприятие: {event_date} | <b>{total_price} руб.</b>\n"
 
         text += "\n<i>*Эти клиенты самые решительные! Они заказали сразу, как узнали о боте.</i>"
+
+        await callback.message.answer(text, parse_mode="HTML", reply_markup=get_admin_menu())
+
+    @dp.callback_query(lambda c: c.data == "admin_db_audit")
+    async def admin_db_audit_panel(callback: CallbackQuery):
+        if callback.from_user.id not in ADMIN_IDS:
+            return
+
+        await callback.answer()
+
+        # Вызываем функцию с FULL OUTER JOIN
+        audit_results = get_db_audit()
+
+        if not audit_results:
+            text = "🩺 <b>Аудит базы завершен.</b>\n\nБаза данных в идеальном порядке: все заказы привязаны к пользователям, а у всех пользователей есть заказы (или они не удалены)."
+            await callback.message.answer(text, parse_mode="HTML", reply_markup=get_admin_menu())
+            return
+
+        text = "🩺 <b>РЕЗУЛЬТАТЫ АУДИТА БАЗЫ:</b>\n\n"
+
+        for row in audit_results:
+            # row[0] - имя пользователя, row[1] - дата заказа, row[2] - user_id, row[3] - order_id
+            first_name, event_date, u_id, o_id = row
+
+            if u_id is None:
+                text += f"⚠️ <b>Битый заказ!</b> Дата: {event_date} (Нет привязки к пользователю)\n"
+            elif o_id is None:
+                text += f"💤 <b>Пользователь без заказов:</b> {first_name} (ID: {u_id})\n"
+
+        text += "\n<i>*Аудит выявил аномалии в связях таблиц. Обычно это происходит при ручном удалении данных.</i>"
 
         await callback.message.answer(text, parse_mode="HTML", reply_markup=get_admin_menu())

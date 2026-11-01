@@ -296,3 +296,21 @@ def get_fast_orders():
     cur.close()
     conn.close()
     return result
+
+
+def get_db_audit():
+    """Аудит базы данных: ищет пользователей без заказов и заказы без пользователей (FULL OUTER JOIN)."""
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT u.first_name, o.event_date, u.id, o.id
+        FROM users u
+        FULL OUTER JOIN orders o ON u.id = o.user_id
+        WHERE u.id IS NULL OR o.id IS NULL
+    """)
+
+    result = cur.fetchall()
+    cur.close()
+    conn.close()
+    return result
