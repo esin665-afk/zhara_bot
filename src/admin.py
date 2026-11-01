@@ -4,7 +4,7 @@ from aiogram.filters import Command
 from src.database import (
     get_statistics, get_top_songs, get_unordered_songs,
     get_above_average_orders, get_sleeping_users, get_fast_orders,
-    get_db_audit
+    get_db_audit, get_monthly_stats
 )
 from src.keyboards import get_admin_menu
 
@@ -193,5 +193,31 @@ def register_admin_handlers(dp):
                 text += f"💤 <b>Пользователь без заказов:</b> {first_name} (ID: {u_id})\n"
 
         text += "\n<i>*Аудит выявил аномалии в связях таблиц. Обычно это происходит при ручном удалении данных.</i>"
+
+        await callback.message.answer(text, parse_mode="HTML", reply_markup=get_admin_menu())
+
+    @dp.callback_query(lambda c: c.data == "admin_monthly_stats")
+    async def admin_monthly_stats_panel(callback: CallbackQuery):
+        if callback.from_user.id not in ADMIN_IDS:
+            return
+
+        await callback.answer()
+
+        # Вызываем функцию с GROUP BY + HAVING
+        monthly_stats = get_monthly_stats()
+
+        if not monthly_stats:
+            text = "Пока нет заказов, чтобы составить статистику по месяцам."
+            await callback.message.answer(text, reply_markup=get_admin_menu())
+            return
+
+        text = "📅 <b>СТАТИСТИКА ПО МЕСЯЦАМ (GROUP BY + HAVING):</b>\n\n"
+
+        for row in monthly_stats:
+            # row[0] - месяц, row[1] - кол-во заказов, row[2] - средний чек
+            month, count, avg_price = row
+            text += f"- Месяц <b>{month}</b> | Заказов: {count} | Средний чек: <b>{int(avg_price)} руб.</b>\n"
+
+        text += "\n<i>*Эта аналитика показывает, в какие месяцы спрос и средний чек выше всего (например, декабрь).</i>"
 
         await callback.message.answer(text, parse_mode="HTML", reply_markup=get_admin_menu())

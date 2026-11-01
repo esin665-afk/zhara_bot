@@ -314,3 +314,25 @@ def get_db_audit():
     cur.close()
     conn.close()
     return result
+
+
+def get_monthly_stats():
+    """Возвращает статистику среднего чека по месяцам (GROUP BY + HAVING)."""
+    conn = get_connection()
+    cur = conn.cursor()
+
+    # Берем месяц из даты (формат DD.MM.YYYY -> берем символы с 4-го по 5-й)
+    cur.execute("""
+        SELECT substring(event_date from 4 for 2) AS month, 
+               COUNT(id) as orders_count, 
+               AVG(total_price) as avg_price
+        FROM orders
+        GROUP BY month
+        HAVING COUNT(id) >= 1
+        ORDER BY month
+    """)
+
+    result = cur.fetchall()
+    cur.close()
+    conn.close()
+    return result
