@@ -1,30 +1,42 @@
 import logging
 import asyncio
-from aiogram import Bot, Dispatcher
-from config import TOKEN
+from aiogram import Bot, Dispatcher, types
+from config import TOKEN, SONGS
 from src.handlers import register_handlers
+from src.admin import register_admin_handlers
+from aiogram.types import Message
+from src.database import init_db, init_songs_db, add_phone_column, update_user_phone, add_check_constraints
+from src.keyboards import get_main_menu  # <-- ДОБАВЛЕН ИМПОРТ КЛАВИАТУРЫ
 
-# 1. ДОБАВЬТЕ ЭТУ СТРОКУ (импорт функции создания таблиц)
-from src.database import init_db
-
-# Настройка логирования
 logging.basicConfig(level=logging.INFO)
 
 
 async def main():
     print("Бот запущен! Идем в Telegram и проверяем...")
 
-    # 2. ДОБАВЬТЕ ЭТУ СТРОКУ (создаем таблицы в базе данных перед запуском)
     init_db()
+    add_phone_column()
+    add_check_constraints()  # <-- ДОБАВИТЬ ЭТО
+    init_songs_db(SONGS)
 
-    # Создаем бота и диспетчер
     bot = Bot(token=TOKEN)
     dp = Dispatcher()
 
-    # Регистрируем все обработчики из модуля handlers.py
     register_handlers(dp)
+    register_admin_handlers(dp)
 
-    # Запускаем бота
+    @dp.message(lambda message: message.contact is not None)
+    async def handle_contact(message: Message):
+        phone = message.contact.phone_number
+        user_id = message.from_user.id
+
+        update_user_phone(user_id, phone)
+
+        await message.answer(
+            "✅ Спасибо! Телефон сохранен. Менеджер свяжется с вами в ближайшее время.",
+            reply_markup=get_main_menu()
+        )
+
     await dp.start_polling(bot)
 
 
