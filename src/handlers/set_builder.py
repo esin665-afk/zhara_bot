@@ -156,7 +156,7 @@ def register_set_handlers(dp):
             first_name=callback.from_user.first_name,
             username=callback.from_user.username or "Нет ника"
         )
-        songs_text = ", ".join([s['title'] for s in cart])
+        songs_text = ", ".join([s['title'] for s in cart])  # (Оставляем для менеджера и PDF)
         song_titles = [s['title'] for s in cart]
 
         save_order_with_songs(
@@ -164,8 +164,7 @@ def register_set_handlers(dp):
             event_date=date_str,
             total_price=total_price,
             total_time=total_time,
-            songs_list_text=songs_text,
-            song_titles=song_titles
+            song_titles=song_titles  # <-- Передаем только названия
         )
 
         text = "🎉 Твой сет собран и отправлен менеджеру!\n\n🎵 Песни:\n"

@@ -45,7 +45,12 @@ def register_admin_handlers(dp):
             text += "Пока нет заказов."
         else:
             for order in stats['last_orders']:
+                # order[0] - имя, order[1] - дата, order[2] - сумма, order[3] - песни
                 text += f"- {order[0]} | {order[1]} | {order[2]} руб.\n"
+                if order[3]:
+                    text += f"  🎵 _{order[3]}_\n"  # <-- ВОТ ЗДЕСЬ ВЫВОДИМ ПЕСНИ
+                else:
+                    text += f"  🎵 _Список песен пуст_\n"
 
         await callback.message.answer(text, parse_mode="Markdown", reply_markup=get_admin_menu())
 

@@ -84,23 +84,24 @@ def get_statistics():
     """Возвращает статистику по заказам из базы данных."""
     conn = get_connection()
     cur = conn.cursor()
-
     stats = {}
 
-    # 1. Общее количество заказов
     cur.execute("SELECT COUNT(*) FROM orders")
     stats['total_orders'] = cur.fetchone()[0]
 
-    # 2. Общая сумма всех заказов
     cur.execute("SELECT SUM(total_price) FROM orders")
     total_sum = cur.fetchone()[0]
     stats['total_revenue'] = total_sum if total_sum else 0
 
-    # 3. Последние 3 заказа (тот самый JOIN)
+    # НОВЫЙ ЗАПРОС: собираем песни на лету с помощью STRING_AGG
     cur.execute("""
-        SELECT u.first_name, o.event_date, o.total_price 
+        SELECT u.first_name, o.event_date, o.total_price, 
+               STRING_AGG(s.title, ', ') as songs 
         FROM users u 
         JOIN orders o ON u.id = o.user_id 
+        LEFT JOIN order_songs os ON o.id = os.order_id
+        LEFT JOIN songs s ON os.song_id = s.id
+        GROUP BY u.first_name, o.event_date, o.total_price, o.created_at
         ORDER BY o.created_at DESC LIMIT 3
     """)
     stats['last_orders'] = cur.fetchall()
@@ -114,11 +115,15 @@ def get_user_last_order(telegram_id):
     """Возвращает последний заказ конкретного пользователя по его Telegram ID."""
     conn = get_connection()
     cur = conn.cursor()
+
     cur.execute("""
-        SELECT o.event_date, o.total_price, o.songs_list 
+        SELECT o.event_date, o.total_price, STRING_AGG(s.title, ', ') as songs
         FROM orders o 
         JOIN users u ON o.user_id = u.id 
+        LEFT JOIN order_songs os ON o.id = os.order_id
+        LEFT JOIN songs s ON os.song_id = s.id
         WHERE u.telegram_id = %s 
+        GROUP BY o.id, o.event_date, o.total_price, o.created_at
         ORDER BY o.created_at DESC LIMIT 1
     """, (telegram_id,))
 
@@ -167,19 +172,17 @@ def init_songs_db(songs_list):
     print("✅ База данных песен готова!")
 
 
-def save_order_with_songs(user_id, event_date, total_price, total_time, songs_list_text, song_titles):
+def save_order_with_songs(user_id, event_date, total_price, total_time, song_titles):
     """Сохраняет заказ и привязывает к нему конкретные песни."""
     conn = get_connection()
     cur = conn.cursor()
 
-    # Сохраняем сам заказ
     cur.execute("""
-        INSERT INTO orders (user_id, event_date, total_price, total_time, songs_list)
-        VALUES (%s, %s, %s, %s, %s) RETURNING id
-    """, (user_id, event_date, total_price, total_time, songs_list_text))
+        INSERT INTO orders (user_id, event_date, total_price, total_time)
+        VALUES (%s, %s, %s, %s) RETURNING id
+    """, (user_id, event_date, total_price, total_time))
     order_id = cur.fetchone()[0]
 
-    # Привязываем песни к заказу (через таблицу order_songs)
     for title in song_titles:
         cur.execute("SELECT id FROM songs WHERE title = %s", (title,))
         song_row = cur.fetchone()
@@ -193,7 +196,7 @@ def save_order_with_songs(user_id, event_date, total_price, total_time, songs_li
     conn.commit()
     cur.close()
     conn.close()
-    print(f"💾 Заказ сохранен в БД с песнями (User ID: {user_id})!")
+    print(f"💾 Заказ сохранен с песнями (User ID: {user_id})!")
 
 
 def get_top_songs():
@@ -406,3 +409,14 @@ def add_check_constraints():
 
     cur.close()
     conn.close()
+
+
+def drop_songs_list_column():
+    """Удаляет колонку songs_list из orders, так как мы перешли на нормальную связь order_songs."""
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("ALTER TABLE orders DROP COLUMN IF EXISTS songs_list;")
+    conn.commit()
+    cur.close()
+    conn.close()
+    print("✅ Колонка songs_list удалена (база нормализована)!")
