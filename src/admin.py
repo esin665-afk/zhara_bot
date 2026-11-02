@@ -1,12 +1,12 @@
 from aiogram import types
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command
 from src.database import (
     get_statistics, get_top_songs, get_unordered_songs,
     get_above_average_orders, get_sleeping_users, get_fast_orders,
-    get_db_audit, get_monthly_stats, clear_all_orders
+    get_db_audit, get_monthly_stats, clear_all_orders, get_recent_orders_for_admin, update_order_status, delete_order_by_id, get_order_details_by_id
 )
-from src.keyboards import get_admin_menu
+from src.keyboards import get_admin_menu, get_orders_list_keyboard, get_order_card_keyboard, get_status_choice_keyboard
 
 # Список ID тех, кому разрешена команда /admin (ваш и менеджера)
 ADMIN_IDS = [1556819688, 1606744507]
@@ -245,3 +245,100 @@ def register_admin_handlers(dp):
         )
 
         await callback.message.answer(text, parse_mode="HTML", reply_markup=get_admin_menu())
+
+    # === НАВИГАЦИЯ ПО ЗАКАЗАМ ДЛЯ АДМИНА ===
+
+    @dp.callback_query(lambda c: c.data == "admin_manage_orders")
+    async def admin_manage_orders_panel(callback: CallbackQuery):
+        if callback.from_user.id not in ADMIN_IDS:
+            return
+        await callback.answer()
+
+        orders = get_recent_orders_for_admin()
+        if not orders:
+            await callback.message.edit_text("Заказов пока нет.", reply_markup=get_admin_menu())
+            return
+
+        text = "📝 <b>Выберите заказ для управления:</b>"
+        await callback.message.edit_text(text, parse_mode="HTML", reply_markup=get_orders_list_keyboard(orders))
+
+    # 1. Открытие карточки заказа
+    @dp.callback_query(lambda c: c.data.startswith("manage_order_"))
+    async def show_order_card(callback: CallbackQuery):
+        await callback.answer()
+        order_id = int(callback.data.split("_")[2])
+
+        order = get_order_details_by_id(order_id)
+        if not order:
+            await callback.message.edit_text("Заказ не найден.", reply_markup=get_admin_menu())
+            return
+
+        name, phone, date, price, time, status, songs = order
+        text = (
+            f"📦 <b>Заказ #{order_id}</b>\n\n"
+            f"👤 Клиент: {name}\n"
+            f"📱 Телефон: {phone or 'Не указан'}\n"
+            f"📅 Дата: {date}\n"
+            f"⏱ Время: {round(time, 1)} мин.\n"
+            f"💰 Сумма: {price} руб.\n"
+            f"📊 Статус: <b>{status}</b>\n\n"
+            f"🎵 Песни: {songs or 'Нет'}"
+        )
+        await callback.message.edit_text(text, parse_mode="HTML", reply_markup=get_order_card_keyboard(order_id))
+
+    # 2. Выбор статуса
+    @dp.callback_query(lambda c: c.data.startswith("change_status_"))
+    async def choose_status(callback: CallbackQuery):
+        await callback.answer()
+        order_id = int(callback.data.split("_")[2])
+        await callback.message.edit_text(
+            f"Выберите новый статус для заказа #{order_id}:",
+            reply_markup=get_status_choice_keyboard(order_id)
+        )
+
+    # 3. Установка статуса
+    @dp.callback_query(lambda c: c.data.startswith("set_status_"))
+    async def set_new_status(callback: CallbackQuery):
+        await callback.answer()
+        parts = callback.data.split("_")
+        order_id = int(parts[2])
+        new_status = parts[3]
+
+        update_order_status(order_id, new_status)
+
+        # Сразу возвращаемся в карточку заказа (вызываем функцию карточки напрямую)
+        await show_order_card(callback)
+
+    # 4. Подтверждение удаления
+    @dp.callback_query(lambda c: c.data.startswith("confirm_delete_"))
+    async def confirm_delete(callback: CallbackQuery):
+        await callback.answer()
+        order_id = int(callback.data.split("_")[2])
+
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="⚠️ ДА, УДАЛИТЬ", callback_data=f"delete_order_{order_id}")],
+            [InlineKeyboardButton(text="Отмена", callback_data=f"manage_order_{order_id}")]
+        ])
+        await callback.message.edit_text(
+            f"Вы уверены, что хотите удалить заказ #{order_id}? Это действие нельзя отменить.",
+            reply_markup=keyboard
+        )
+
+    # 5. Само удаление
+    @dp.callback_query(lambda c: c.data.startswith("delete_order_"))
+    async def execute_delete(callback: CallbackQuery):
+        await callback.answer()
+        order_id = int(callback.data.split("_")[2])
+
+        delete_order_by_id(order_id)
+        await callback.message.edit_text(f"🗑️ Заказ #{order_id} удален!", reply_markup=get_admin_menu())
+
+    # 6. Кнопка "Назад в админку"
+    @dp.callback_query(lambda c: c.data == "admin_menu_back")
+    async def back_to_admin(callback: CallbackQuery):
+        await callback.answer()
+        await callback.message.edit_text(
+            "👨‍💻 <b>Админ-панель бота «ЖАРА»</b>\nВыберите действие:",
+            parse_mode="HTML",
+            reply_markup=get_admin_menu()
+        )

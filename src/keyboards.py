@@ -41,7 +41,8 @@ def get_admin_menu():
         [InlineKeyboardButton(text="⚡ Быстрые заказы", callback_data="admin_fast_orders")],
         [InlineKeyboardButton(text="🩺 Аудит базы", callback_data="admin_db_audit")],
         [InlineKeyboardButton(text="📅 По месяцам", callback_data="admin_monthly_stats")],
-        [InlineKeyboardButton(text="🧨 Очистить заказы", callback_data="admin_clear_orders")], # <-- НОВАЯ КНОПКА
+        [InlineKeyboardButton(text="📝 Управление заказами", callback_data="admin_manage_orders")], # <-- ВОТ ОНА!
+        [InlineKeyboardButton(text="🧨 Очистить заказы", callback_data="admin_clear_orders")],
         [InlineKeyboardButton(text="🔙 В главное меню", callback_data="main_menu")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
@@ -57,3 +58,32 @@ def get_phone_keyboard():
         one_time_keyboard=True
     )
     return keyboard
+
+
+def get_orders_list_keyboard(orders):
+    """Клавиатура со списком заказов (для админа)."""
+    keyboard = []
+    for order in orders:
+        # order[0] - id, order[1] - дата, order[2] - сумма, order[3] - статус
+        btn_text = f"📦 #{order[0]} | {order[1]} | {order[2]} руб. | {order[3]}"
+        keyboard.append([InlineKeyboardButton(text=btn_text, callback_data=f"manage_order_{order[0]}")])
+    keyboard.append([InlineKeyboardButton(text="🔙 Назад в админку", callback_data="admin_menu_back")])
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+def get_order_card_keyboard(order_id):
+    """Клавиатура для карточки конкретного заказа."""
+    keyboard = [
+        [InlineKeyboardButton(text="🔄 Изменить статус", callback_data=f"change_status_{order_id}")],
+        [InlineKeyboardButton(text="🗑️ Удалить заказ", callback_data=f"confirm_delete_{order_id}")],
+        [InlineKeyboardButton(text="🔙 К списку заказов", callback_data="admin_manage_orders")]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+def get_status_choice_keyboard(order_id):
+    """Клавиатура для выбора нового статуса."""
+    statuses = ["Новый", "Подтвержден", "Оплачен", "Отменен"]
+    keyboard = []
+    for status in statuses:
+        keyboard.append([InlineKeyboardButton(text=status, callback_data=f"set_status_{order_id}_{status}")])
+    keyboard.append([InlineKeyboardButton(text="🔙 Назад к заказу", callback_data=f"manage_order_{order_id}")])
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)

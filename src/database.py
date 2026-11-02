@@ -41,6 +41,21 @@ def init_db():
     print("✅ База данных готова к работе!")
 
 
+def add_status_column():
+    """Добавляет колонку status в orders со значением по умолчанию 'Новый'."""
+    conn = get_connection()
+    cur = conn.cursor()
+    # Используем DEFAULT из урока!
+    cur.execute("""
+        ALTER TABLE orders 
+        ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Новый';
+    """)
+    conn.commit()
+    cur.close()
+    conn.close()
+    print("✅ Колонка status (со значением по умолчанию) добавлена!")
+
+
 def get_or_create_user(telegram_id, first_name, username):
     """Ищет пользователя по Telegram ID, если нет — создает и возвращает его ID в базе."""
     conn = get_connection()
@@ -435,3 +450,68 @@ def clear_all_orders():
     cur.close()
     conn.close()
     print("🧨 Все заказы удалены (TRUNCATE)!")
+
+
+def update_order_status(order_id, new_status):
+    """Обновляет статус заказа (оператор UPDATE)."""
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE orders 
+        SET status = %s 
+        WHERE id = %s
+    """, (new_status, order_id))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+    print(f"🔄 Статус заказа #{order_id} изменен на '{new_status}'!")
+
+
+def delete_order_by_id(order_id):
+    """Удаляет заказ по его ID (оператор DELETE)."""
+    conn = get_connection()
+    cur = conn.cursor()
+
+    # Удаляем заказ. Благодаря ON DELETE CASCADE, связанные записи в order_songs удалятся сами!
+    cur.execute("DELETE FROM orders WHERE id = %s", (order_id,))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+    print(f"🗑️ Заказ #{order_id} успешно удален!")
+
+def get_recent_orders_for_admin():
+    """Возвращает последние 5 заказов с их ID и статусами для админки."""
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT id, event_date, total_price, status 
+        FROM orders 
+        ORDER BY created_at DESC LIMIT 5
+    """)
+    result = cur.fetchall()
+    cur.close()
+    conn.close()
+    return result
+
+
+def get_order_details_by_id(order_id):
+    """Возвращает полную информацию о заказе по его ID."""
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT u.first_name, u.phone, o.event_date, o.total_price, o.total_time, o.status,
+               STRING_AGG(s.title, ', ') as songs
+        FROM orders o
+        JOIN users u ON o.user_id = u.id
+        LEFT JOIN order_songs os ON o.id = os.order_id
+        LEFT JOIN songs s ON os.song_id = s.id
+        WHERE o.id = %s
+        GROUP BY o.id, u.first_name, u.phone, o.event_date, o.total_price, o.total_time, o.status
+    """, (order_id,))
+    result = cur.fetchone()
+    cur.close()
+    conn.close()
+    return result

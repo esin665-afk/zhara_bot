@@ -5,7 +5,7 @@ from config import TOKEN, SONGS
 from src.handlers import register_handlers
 from src.admin import register_admin_handlers
 from aiogram.types import Message
-from src.database import init_db, init_songs_db, add_phone_column, update_user_phone, drop_songs_list_column
+from src.database import init_db, init_songs_db, add_phone_column, update_user_phone, drop_songs_list_column, add_status_column
 from src.keyboards import get_main_menu  # <-- ДОБАВЛЕН ИМПОРТ КЛАВИАТУРЫ
 
 logging.basicConfig(level=logging.INFO)
@@ -18,6 +18,7 @@ async def main():
     add_phone_column()
     drop_songs_list_column()  # <-- ДОБАВИТЬ ЭТО
     init_songs_db(SONGS)
+    add_status_column()
 
     bot = Bot(token=TOKEN)
     dp = Dispatcher()
