@@ -4,7 +4,7 @@ from aiogram.filters import Command
 from src.database import (
     get_statistics, get_top_songs, get_unordered_songs,
     get_above_average_orders, get_sleeping_users, get_fast_orders,
-    get_db_audit, get_monthly_stats
+    get_db_audit, get_monthly_stats, clear_all_orders
 )
 from src.keyboards import get_admin_menu
 
@@ -224,5 +224,24 @@ def register_admin_handlers(dp):
             text += f"- Месяц <b>{month}</b> | Заказов: {count} | Средний чек: <b>{int(avg_price)} руб.</b>\n"
 
         text += "\n<i>*Эта аналитика показывает, в какие месяцы спрос и средний чек выше всего (например, декабрь).</i>"
+
+        await callback.message.answer(text, parse_mode="HTML", reply_markup=get_admin_menu())
+
+
+    @dp.callback_query(lambda c: c.data == "admin_clear_orders")
+    async def admin_clear_orders_panel(callback: CallbackQuery):
+        if callback.from_user.id not in ADMIN_IDS:
+            return
+
+        await callback.answer()
+
+        # Вызываем функцию с TRUNCATE
+        clear_all_orders()
+
+        text = (
+            "🧨 <b>БАЗА ДАННЫХ ОЧИЩЕНА!</b>\n\n"
+            "Все тестовые заказы удалены, счетчики ID сброшены на 1.\n"
+            "Теперь бот полностью готов к реальной коммерческой работе!"
+        )
 
         await callback.message.answer(text, parse_mode="HTML", reply_markup=get_admin_menu())

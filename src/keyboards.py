@@ -40,7 +40,8 @@ def get_admin_menu():
         [InlineKeyboardButton(text="💤 Спящие клиенты", callback_data="admin_sleeping_users")],
         [InlineKeyboardButton(text="⚡ Быстрые заказы", callback_data="admin_fast_orders")],
         [InlineKeyboardButton(text="🩺 Аудит базы", callback_data="admin_db_audit")],
-        [InlineKeyboardButton(text="📅 По месяцам", callback_data="admin_monthly_stats")], # <-- НОВАЯ КНОПКА
+        [InlineKeyboardButton(text="📅 По месяцам", callback_data="admin_monthly_stats")],
+        [InlineKeyboardButton(text="🧨 Очистить заказы", callback_data="admin_clear_orders")], # <-- НОВАЯ КНОПКА
         [InlineKeyboardButton(text="🔙 В главное меню", callback_data="main_menu")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)

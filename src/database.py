@@ -420,3 +420,18 @@ def drop_songs_list_column():
     cur.close()
     conn.close()
     print("✅ Колонка songs_list удалена (база нормализована)!")
+
+
+def clear_all_orders():
+    """Удаляет все заказы и связи, сбрасывает счетчики (TRUNCATE)."""
+    conn = get_connection()
+    cur = conn.cursor()
+
+    # TRUNCATE с CASCADE удаляет данные из orders и связанной order_songs
+    # RESTART IDENTITY сбрасывает счетчик ID обратно на 1
+    cur.execute("TRUNCATE TABLE orders, order_songs RESTART IDENTITY CASCADE;")
+
+    conn.commit()
+    cur.close()
+    conn.close()
+    print("🧨 Все заказы удалены (TRUNCATE)!")
