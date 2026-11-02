@@ -23,7 +23,6 @@ erDiagram
         varchar event_date
         int total_price
         float total_time
-        text songs_list
         timestamp created_at
     }
 
