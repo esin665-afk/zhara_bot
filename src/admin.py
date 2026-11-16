@@ -189,8 +189,11 @@ def register_admin_handlers(dp):
         text = "🩺 <b>РЕЗУЛЬТАТЫ АУДИТА БАЗЫ:</b>\n\n"
 
         for row in audit_results:
-            # row[0] - имя пользователя, row[1] - дата заказа, row[2] - user_id, row[3] - order_id
             first_name, event_date, u_id, o_id = row
+
+            # Если есть заказ, но нет юзера - это заказ с сайта, пропускаем
+            if u_id is None and o_id is not None:
+                continue
 
             if u_id is None:
                 text += f"⚠️ <b>Битый заказ!</b> Дата: {event_date} (Нет привязки к пользователю)\n"
@@ -274,17 +277,25 @@ def register_admin_handlers(dp):
             return
 
         name, phone, date, price, time, status, songs = order
+
+        # Безопасная обработка None (для заказов с сайта)
+        safe_time = round(time, 1) if time is not None else "Не указано"
+        safe_price = price if price is not None else 0
+        safe_name = name if name else "Клиент с сайта"
+        safe_songs = songs if songs else "Не выбран"
+
         text = (
             f"📦 <b>Заказ #{order_id}</b>\n\n"
-            f"👤 Клиент: {name}\n"
+            f"👤 Клиент: {safe_name}\n"
             f"📱 Телефон: {phone or 'Не указан'}\n"
             f"📅 Дата: {date}\n"
-            f"⏱ Время: {round(time, 1)} мин.\n"
-            f"💰 Сумма: {price} руб.\n"
+            f"⏱ Время: {safe_time} мин.\n"
+            f"💰 Сумма: {safe_price} руб.\n"
             f"📊 Статус: <b>{status}</b>\n\n"
-            f"🎵 Песни: {songs or 'Нет'}"
+            f"🎵 Песни: {safe_songs}"
         )
         await callback.message.edit_text(text, parse_mode="HTML", reply_markup=get_order_card_keyboard(order_id))
+
 
     # 2. Выбор статуса
     @dp.callback_query(lambda c: c.data.startswith("change_status_"))

@@ -65,10 +65,16 @@ def get_orders_list_keyboard(orders):
     keyboard = []
     for order in orders:
         # order[0] - id, order[1] - дата, order[2] - сумма, order[3] - статус
-        btn_text = f"📦 #{order[0]} | {order[1]} | {order[2]} руб. | {order[3]}"
+
+        # Если суммы нет (заказ с сайта), ставим 0
+        safe_price = order[2] if order[2] is not None else 0
+
+        btn_text = f"📦 #{order[0]} | {order[1]} | {safe_price} руб. | {order[3]}"
         keyboard.append([InlineKeyboardButton(text=btn_text, callback_data=f"manage_order_{order[0]}")])
+
     keyboard.append([InlineKeyboardButton(text="🔙 Назад в админку", callback_data="admin_menu_back")])
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
 
 def get_order_card_keyboard(order_id):
     """Клавиатура для карточки конкретного заказа."""

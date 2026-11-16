@@ -101,22 +101,27 @@ def get_statistics():
     cur = conn.cursor()
     stats = {}
 
+    # 1. Считаем общее количество заказов (тут всё верно)
     cur.execute("SELECT COUNT(*) FROM orders")
     stats['total_orders'] = cur.fetchone()[0]
 
+    # 2. Считаем общую выручку (тут всё верно)
     cur.execute("SELECT SUM(total_price) FROM orders")
     total_sum = cur.fetchone()[0]
     stats['total_revenue'] = total_sum if total_sum else 0
 
-    # НОВЫЙ ЗАПРОС: собираем песни на лету с помощью STRING_AGG
+    # 3. ИСПРАВЛЕННЫЙ ЗАПРОС: берем имя либо из users, либо из orders
     cur.execute("""
-        SELECT u.first_name, o.event_date, o.total_price, 
-               STRING_AGG(s.title, ', ') as songs 
-        FROM users u 
-        JOIN orders o ON u.id = o.user_id 
+        SELECT 
+            COALESCE(u.first_name, o.name, 'Клиент с сайта') as display_name, 
+            o.event_date, 
+            COALESCE(o.total_price, 0) as price, 
+            STRING_AGG(s.title, ', ') as songs 
+        FROM orders o 
+        LEFT JOIN users u ON u.id = o.user_id 
         LEFT JOIN order_songs os ON o.id = os.order_id
         LEFT JOIN songs s ON os.song_id = s.id
-        GROUP BY u.first_name, o.event_date, o.total_price, o.created_at
+        GROUP BY COALESCE(u.first_name, o.name, 'Клиент с сайта'), o.event_date, o.total_price, o.created_at
         ORDER BY o.created_at DESC LIMIT 3
     """)
     stats['last_orders'] = cur.fetchall()
@@ -498,18 +503,24 @@ def get_recent_orders_for_admin():
 
 
 def get_order_details_by_id(order_id):
-    """Возвращает полную информацию о заказе по его ID."""
+    """Возвращает полную информацию о заказе по его ID (с поддержкой заказов с сайта)."""
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("""
-        SELECT u.first_name, u.phone, o.event_date, o.total_price, o.total_time, o.status,
-               STRING_AGG(s.title, ', ') as songs
+        SELECT 
+            COALESCE(u.first_name, o.name) AS display_name, 
+            COALESCE(u.phone, o.phone) AS display_phone, 
+            o.event_date, 
+            COALESCE(o.total_price, 0), 
+            COALESCE(o.total_time, 0), 
+            o.status,
+            STRING_AGG(s.title, ', ') as songs
         FROM orders o
-        JOIN users u ON o.user_id = u.id
+        LEFT JOIN users u ON o.user_id = u.id
         LEFT JOIN order_songs os ON o.id = os.order_id
         LEFT JOIN songs s ON os.song_id = s.id
         WHERE o.id = %s
-        GROUP BY o.id, u.first_name, u.phone, o.event_date, o.total_price, o.total_time, o.status
+        GROUP BY o.id, u.first_name, o.name, u.phone, o.phone, o.event_date, o.total_price, o.total_time, o.status
     """, (order_id,))
     result = cur.fetchone()
     cur.close()
