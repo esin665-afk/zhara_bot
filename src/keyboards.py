@@ -1,20 +1,25 @@
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
 from config import SONGS
 
 
 def get_main_menu():
     keyboard = [
+        [InlineKeyboardButton(
+            text="🔥 Открыть сайт (Видео)",
+            web_app=WebAppInfo(url="https://existing-post-lewis-remind.trycloudflare.com")
+        )],
         [InlineKeyboardButton(text="🎵 Афиша", callback_data="afisha")],
         [InlineKeyboardButton(text="🎥 Видео", callback_data="video")],
         [InlineKeyboardButton(text="📞 Контакты", callback_data="contacts")],
         [InlineKeyboardButton(text="📢 Поделиться ботом", switch_inline_query="Смотри, какой крутой бот у группы ЖАРА! Собери свой идеальный сет 🎸🔥")],
         [InlineKeyboardButton(text="🎫 Мой последний заказ", callback_data="my_orders")],
         [InlineKeyboardButton(text="💙 Мы во ВКонтакте", url="https://vk.ru/zhara_62")],
-        [InlineKeyboardButton(text="📅 Выбрать дату", callback_data="book_date")], # <-- ВОТ ОНА!
+        [InlineKeyboardButton(text="📅 Выбрать дату", callback_data="book_date")],
         [InlineKeyboardButton(text="🎸 Собрать свой сет", callback_data="set_builder")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
+# ... (остальные функции ниже без изменений)
 
 def get_songs_menu():
     """Меню с выбором песен."""
