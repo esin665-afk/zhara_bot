@@ -19,11 +19,12 @@ def init_db():
             telegram_id BIGINT UNIQUE NOT NULL,
             first_name VARCHAR(100),
             username VARCHAR(100),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            phone VARCHAR(20),
+            created_at TIMESTAMPTZ DEFAULT now()
         );
     """)
 
-    # 2. Таблица заказов (связываем с users)
+    # 2. Таблица заказов
     cur.execute("""
         CREATE TABLE IF NOT EXISTS orders (
             id SERIAL PRIMARY KEY,
@@ -31,8 +32,10 @@ def init_db():
             event_date VARCHAR(50),
             total_price INT,
             total_time FLOAT,
-            songs_list TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            name VARCHAR(100),
+            phone VARCHAR(20),
+            status VARCHAR(50) DEFAULT 'Новый',
+            created_at TIMESTAMPTZ DEFAULT now()
         );
     """)
     conn.commit()
@@ -344,14 +347,17 @@ def get_monthly_stats():
     conn = get_connection()
     cur = conn.cursor()
 
-    # Берем месяц из даты (формат DD.MM.YYYY -> берем символы с 4-го по 5-й)
     cur.execute("""
-        SELECT substring(event_date from 4 for 2) AS month, 
-               COUNT(id) as orders_count, 
-               AVG(total_price) as avg_price
+        SELECT to_char(
+                   CASE
+                       WHEN event_date ~ '^[0-9]{2}\\.[0-9]{2}\\.[0-9]{4}$' THEN to_date(event_date, 'DD.MM.YYYY')
+                       WHEN event_date ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN to_date(event_date, 'YYYY-MM-DD')
+                   END, 'MM') AS month,
+               COUNT(id) as orders_count,
+               COALESCE(AVG(total_price), 0) as avg_price
         FROM orders
+        WHERE event_date IS NOT NULL
         GROUP BY month
-        HAVING COUNT(id) >= 1
         ORDER BY month
     """)
 
@@ -429,17 +435,6 @@ def add_check_constraints():
 
     cur.close()
     conn.close()
-
-
-def drop_songs_list_column():
-    """Удаляет колонку songs_list из orders, так как мы перешли на нормальную связь order_songs."""
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("ALTER TABLE orders DROP COLUMN IF EXISTS songs_list;")
-    conn.commit()
-    cur.close()
-    conn.close()
-    print("✅ Колонка songs_list удалена (база нормализована)!")
 
 
 def clear_all_orders():

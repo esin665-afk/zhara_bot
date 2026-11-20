@@ -1,20 +1,21 @@
 import os
+from pathlib import Path
 from datetime import date
 from dotenv import load_dotenv
 
-# Загружаем переменные из файла .env
-load_dotenv()
+BASE_DIR = Path(__file__).resolve().parent
 
-# Берем токен из переменной окружения BOT_TOKEN
-TOKEN = os.getenv("BOT_TOKEN")
+load_dotenv(BASE_DIR / '.env')
+
+TOKEN = os.environ['TELEGRAM_BOT_TOKEN']
 
 # --- НАСТРОЙКИ БАЗЫ ДАННЫХ ---
 DB_CONFIG = {
-    "dbname": "zhara_db",
-    "user": "postgres",
-    "password": "postgres",  # Если при сбросе пароля вы ставили другой, укажите его тут
-    "host": "localhost",
-    "port": "5432"
+    "dbname": os.environ['DB_NAME'],
+    "user": os.environ['DB_USER'],
+    "password": os.environ['DB_PASSWORD'],
+    "host": os.environ.get('DB_HOST', 'localhost'),
+    "port": os.environ.get('DB_PORT', '5432'),
 }
 
 # Список тех, кому будут приходить заявки (без @)

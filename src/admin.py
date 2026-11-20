@@ -224,8 +224,8 @@ def register_admin_handlers(dp):
         for row in monthly_stats:
             # row[0] - месяц, row[1] - кол-во заказов, row[2] - средний чек
             month, count, avg_price = row
-            text += f"- Месяц <b>{month}</b> | Заказов: {count} | Средний чек: <b>{int(avg_price)} руб.</b>\n"
-
+            avg = avg_price if avg_price is not None else 0
+            text += f"- Месяц <b>{month}</b> | Заказов: {count} | Средний чек: <b>{int(avg)} руб.</b>\n"
         text += "\n<i>*Эта аналитика показывает, в какие месяцы спрос и средний чек выше всего (например, декабрь).</i>"
 
         await callback.message.answer(text, parse_mode="HTML", reply_markup=get_admin_menu())
