@@ -4,15 +4,20 @@ from aiogram.filters import Command
 from src.keyboards import get_main_menu
 from config import VIDEOS, WELCOME_VIDEO
 from src.database import get_user_last_order
+from src.handlers.calendar import user_dates
+from src.handlers.set_builder import user_carts
 
 def register_menu_handlers(dp):
     @dp.message(Command("start"))
     async def start(message: types.Message):
+        user_dates.pop(message.from_user.id, None)
+        user_carts.pop(message.from_user.id, None)
         await message.answer_video(
             video=WELCOME_VIDEO,
             caption="🔥 Привет! Это бот кавер-группы «ЖАРА».\nВыбирай, что тебя интересует:",
             reply_markup=get_main_menu()
         )
+
 
     @dp.callback_query(lambda c: c.data in ["afisha", "video", "contacts", "main_menu", "my_orders"])
     async def menu_handler(callback: CallbackQuery):
