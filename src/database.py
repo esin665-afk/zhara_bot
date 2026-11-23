@@ -200,10 +200,16 @@ def save_order_with_songs(user_id, event_date, total_price, total_time, song_tit
     conn = get_connection()
     cur = conn.cursor()
 
+    # Подтягиваем имя и телефон из таблицы users
+    cur.execute("SELECT first_name, phone FROM users WHERE id = %s", (user_id,))
+    user_row = cur.fetchone()
+    user_name = user_row[0] if user_row else None
+    user_phone = user_row[1] if user_row else None
+
     cur.execute("""
-        INSERT INTO orders (user_id, event_date, total_price, total_time)
-        VALUES (%s, %s, %s, %s) RETURNING id
-    """, (user_id, event_date, total_price, total_time))
+        INSERT INTO orders (user_id, event_date, total_price, total_time, name, phone)
+        VALUES (%s, %s, %s, %s, %s, %s) RETURNING id
+    """, (user_id, event_date, total_price, total_time, user_name, user_phone))
     order_id = cur.fetchone()[0]
 
     for title in song_titles:
@@ -392,6 +398,10 @@ def update_user_phone(telegram_id, phone):
         "UPDATE users SET phone = %s WHERE telegram_id = %s",
         (phone, telegram_id)
     )
+    cur.execute("""
+        UPDATE orders SET phone = %s
+        WHERE user_id = (SELECT id FROM users WHERE telegram_id = %s)
+    """, (phone, telegram_id))
     conn.commit()
     cur.close()
     conn.close()
