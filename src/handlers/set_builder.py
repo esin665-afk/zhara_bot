@@ -128,35 +128,83 @@ def register_set_handlers(dp):
             except Exception as e:
                 print(f"Ошибка отправки {recipient_id}: {e}")
 
-        # ПРОВЕРКА НА ТЕЛЕФОН
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT phone FROM users WHERE telegram_id = %s", (user_id,))
-        phone_row = cur.fetchone()
-        cur.close()
-        conn.close()
+        # # ПРОВЕРКА НА ТЕЛЕФОН
+        # conn = get_connection()
+        # cur = conn.cursor()
+        # cur.execute("SELECT phone FROM users WHERE telegram_id = %s", (user_id,))
+        # phone_row = cur.fetchone()
+        # cur.close()
+        # conn.close()
+        #
+        # # Если телефона нет, просим его и ПРЕРЫВАЕМ оформление (заказ сохранится после ввода)
+        # if not phone_row or not phone_row[0]:
+        #     # Сохраняем корзину во временную переменную, чтобы не потерять, когда он введет телефон
+        #     temp_carts[user_id] = cart
+        #
+        #     await callback.message.answer(
+        #         "📱 Пожалуйста, поделитесь своим номером телефона, чтобы менеджер мог связаться с вами для уточнения деталей:",
+        #         reply_markup=get_phone_keyboard()
+        #     )
+        #     # Убираем старые кнопки, чтобы не мешали
+        #     await callback.message.edit_reply_markup(reply_markup=None)
+        #     return  # Выходим, ждем, пока пользователь нажмет "Отправить контакт"
+        #
+        #
+        # # СОХРАНЕНИЕ В БАЗУ
+        # user_db_id = get_or_create_user(
+        #     telegram_id=callback.from_user.id,
+        #     first_name=callback.from_user.first_name,
+        #     username=callback.from_user.username or "Нет ника"
+        # )
+        # songs_text = ", ".join([s['title'] for s in cart])  # (Оставляем для менеджера и PDF)
+        # song_titles = [s['title'] for s in cart]
+        #
+        # save_order_with_songs(
+        #     user_id=user_db_id,
+        #     event_date=date_str,
+        #     total_price=total_price,
+        #     total_time=total_time,
+        #     song_titles=song_titles  # <-- Передаем только названия
+        # )
+        #
+        # text = "🎉 Твой сет собран и отправлен менеджеру!\n\n🎵 Песни:\n"
+        # for s in cart:
+        #     text += f"- {s['title']}\n"
+        # text += f"\n📅 Дата: {date_str}\n⏱ Общее время: {round(total_time, 1)} мин.\n"
+        # text += f"💰 Общая стоимость: {total_price} руб.\n\nС тобой свяжутся для уточнения деталей."
+        #
+        # user_carts[user_id] = []
+        #
+        # # --- ГЕНЕРАЦИЯ И ОТПРАВКА PDF ---
+        # try:
+        #     pdf_filename = generate_receipt(
+        #         user_name=callback.from_user.first_name,
+        #         event_date=date_str,
+        #         songs_list=songs_text,
+        #         total_time=total_time,
+        #         total_price=total_price
+        #     )
+        #     pdf_file = FSInputFile(pdf_filename)
+        #     await callback.message.answer_document(
+        #         document=pdf_file,
+        #         caption="📄 Ваш официальный чек и сет-лист. Сохраните его!"
+        #     )
+        #     os.remove(pdf_filename)
+        # except Exception as e:
+        #     print(f"Ошибка генерации PDF: {e}")
+        # # --------------------------------
+        #
+        # # ИЗМЕНЕНО: edit_text -> answer
+        # await callback.message.answer(text=text, reply_markup=get_main_menu())
 
-        # Если телефона нет, просим его и ПРЕРЫВАЕМ оформление (заказ сохранится после ввода)
-        if not phone_row or not phone_row[0]:
-            # Сохраняем корзину во временную переменную, чтобы не потерять, когда он введет телефон
-            temp_carts[user_id] = cart
 
-            await callback.message.answer(
-                "📱 Пожалуйста, поделитесь своим номером телефона, чтобы менеджер мог связаться с вами для уточнения деталей:",
-                reply_markup=get_phone_keyboard()
-            )
-            # Убираем старые кнопки, чтобы не мешали
-            await callback.message.edit_reply_markup(reply_markup=None)
-            return  # Выходим, ждем, пока пользователь нажмет "Отправить контакт"
-
-
-        # СОХРАНЕНИЕ В БАЗУ
+        # СОХРАНЕНИЕ В БАЗУ (сразу, до проверки телефона)
         user_db_id = get_or_create_user(
             telegram_id=callback.from_user.id,
             first_name=callback.from_user.first_name,
             username=callback.from_user.username or "Нет ника"
         )
-        songs_text = ", ".join([s['title'] for s in cart])  # (Оставляем для менеджера и PDF)
+        songs_text = ", ".join([s['title'] for s in cart])
         song_titles = [s['title'] for s in cart]
 
         save_order_with_songs(
@@ -164,8 +212,13 @@ def register_set_handlers(dp):
             event_date=date_str,
             total_price=total_price,
             total_time=total_time,
-            song_titles=song_titles  # <-- Передаем только названия
+            song_titles=song_titles
         )
+
+        try:
+            await callback.message.edit_reply_markup(reply_markup=None)
+        except Exception:
+            pass
 
         text = "🎉 Твой сет собран и отправлен менеджеру!\n\n🎵 Песни:\n"
         for s in cart:
@@ -194,5 +247,18 @@ def register_set_handlers(dp):
             print(f"Ошибка генерации PDF: {e}")
         # --------------------------------
 
-        # ИЗМЕНЕНО: edit_text -> answer
         await callback.message.answer(text=text, reply_markup=get_main_menu())
+
+        # ПРОВЕРКА НА ТЕЛЕФОН (уточнение после оформления)
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT phone FROM users WHERE telegram_id = %s", (user_id,))
+        phone_row = cur.fetchone()
+        cur.close()
+        conn.close()
+
+        if not phone_row or not phone_row[0]:
+            await callback.message.answer(
+                "📱 Пожалуйста, поделитесь номером телефона, чтобы менеджер мог связаться с вами для уточнения деталей:",
+                reply_markup=get_phone_keyboard()
+            )
