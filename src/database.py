@@ -206,10 +206,18 @@ def save_order_with_songs(user_id, event_date, total_price, total_time, song_tit
     user_name = user_row[0] if user_row else None
     user_phone = user_row[1] if user_row else None
 
+    event_date_iso = event_date
+    if event_date:
+        try:
+            d, m, y = event_date.split('.')
+            event_date_iso = f"{y}-{m}-{d}"
+        except (ValueError, AttributeError):
+            pass
+
     cur.execute("""
         INSERT INTO orders (user_id, event_date, total_price, total_time, name, phone)
         VALUES (%s, %s, %s, %s, %s, %s) RETURNING id
-    """, (user_id, event_date, total_price, total_time, user_name, user_phone))
+    """, (user_id, event_date_iso, total_price, total_time, user_name, user_phone))
     order_id = cur.fetchone()[0]
 
     for title in song_titles:
