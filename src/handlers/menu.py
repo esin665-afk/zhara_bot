@@ -60,12 +60,23 @@ def register_menu_handlers(dp):
                         print(f"Ошибка отправки видео: {e}")
             await callback.message.answer("🔥 Главное меню:", reply_markup=get_main_menu())
 
+
         elif data == "contacts":
+
             text = "📞 Свяжись с нами:\nМенеджер: +7 910 616-47-60\n\nПодписывайся на нашу группу ВК 👇"
+
             keyboard = InlineKeyboardMarkup(inline_keyboard=[
+
+                # ВОТ НОВАЯ КНОПКА С САЙТОМ
+
+                [InlineKeyboardButton(text="🌐 Перейти на сайт", url="https://zhara-band.ru")],
+
                 [InlineKeyboardButton(text="💙 Перейти в группу ВК", url="https://vk.ru/zhara_62")],
+
                 [InlineKeyboardButton(text="🔙 В главное меню", callback_data="main_menu")]
+
             ])
+
             await callback.message.answer(text=text, reply_markup=keyboard)
 
         elif data == "my_orders":
