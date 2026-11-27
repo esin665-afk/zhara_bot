@@ -1,5 +1,5 @@
 from aiogram import types
-from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from aiogram.filters import Command
 from src.keyboards import get_main_menu
 from config import VIDEOS, WELCOME_VIDEO
@@ -26,14 +26,28 @@ def register_menu_handlers(dp):
 
         # ИСПОЛЬЗУЕМ answer ВМЕСТО edit_text
         if data == "afisha":
-            text = "🎸 Ближайшие выступления:\n\n📅 15 сентября — Бар «Old gentleman»\n📅 22 сентября — Паб «Кэрролл»\nПодробности в соцсетях!"
-            await callback.message.answer(text=text, reply_markup=get_main_menu())
+            text = (
+                "🎄 **Готовимся к Новому году!**\n\n"
+                "До главного праздника осталось меньше двух месяцев, а лучшие даты уже разбирают! 🎅\n\n"
+                "Кавер-группа «ЖАРА» подарит вашим коллегам настоящий праздник:\n"
+                "🔥 Живой звук и мощная энергетика\n"
+                "🎸 Танцевальные хиты — от ретро до современных чартов\n"
+                "💡 Свой звук (работаем на любых площадках)\n\n"
+                "Успейте забронировать дату для вашего корпоратива! 👇"
+            )
+            # Создаем кнопку, которая ведет на страницу бронирования
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="🔥 Забронировать Новый Год",
+                                      web_app=WebAppInfo(url="https://zhara-band.ru/booking/"))],
+                [InlineKeyboardButton(text="🔙 В главное меню", callback_data="main_menu")]
+            ])
+            await callback.message.answer(text=text, parse_mode="Markdown", reply_markup=keyboard)
 
         elif data == "video":
             text_vk = (
                 "🎥 **Наш проморолик и соцсети:**\n\n"
                 "Смотрите полную версию по ссылке:\n"
-                "https://vkvideo.ru/video-128877586_456239060?t=5m15s\n"
+                "https://clck.ru/3XHAEf\n"
                 "Наш ВК: https://vk.ru/zhara_62\n\n"
                 "А вот и короткое видео прямо здесь 👇"
             )
