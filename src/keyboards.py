@@ -6,7 +6,7 @@ def get_main_menu():
     keyboard = [
         [InlineKeyboardButton(
             text="🔥 Открыть сайт (Видео)",
-            web_app=WebAppInfo(url="https://context-stuffed-insights-real.trycloudflare.com")
+            web_app=WebAppInfo(url="https://zhara-band.ru")  # <-- ВОТ НОВАЯ ССЫЛКА
         )],
         [InlineKeyboardButton(text="🎵 Афиша", callback_data="afisha")],
         [InlineKeyboardButton(text="🎥 Видео", callback_data="video")],
